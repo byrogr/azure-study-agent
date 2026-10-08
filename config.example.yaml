@@ -1,0 +1,29 @@
+# Copia este archivo como config.yaml y ajusta las rutas.
+
+# Ruta absoluta a tu vault de Obsidian
+vault_path: "/Users/TU_USUARIO/Documents/ObsidianVault"
+
+# Carpeta dentro del vault donde se guardan las notas de la certificación
+base_folder: "Certificaciones/AI-901"
+
+# Examen activo (archivo en exams/<exam>.yaml)
+exam: "ai-901"
+
+# Idioma de Microsoft Learn (se reescribe en la URL: en-us -> es-es)
+learn_locale: "es-es"
+
+claude:
+  # Binario de Claude Code (usa tu suscripción Pro/Max; haz `claude` una vez para iniciar sesión)
+  bin: "claude"
+  # sonnet = buen equilibrio calidad/consumo; opus = máxima calidad; haiku = más rápido
+  model: "sonnet"
+  timeout_seconds: 900
+  # Usa --json-schema para salida estructurada (Claude Code reciente). Pon false si tu versión no lo soporta.
+  use_json_schema: true
+
+generation:
+  questions_per_module: 10
+  flashcards_per_module: 20
+  # Unidades a omitir por su slug: "exercise" = laboratorios,
+  # "knowledge-check" = evaluación del módulo (solo el cuestionario, el agente ya genera preguntas)
+  skip_units_matching: ["exercise", "knowledge-check"]

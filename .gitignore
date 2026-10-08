@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+.cache/
+config.yaml
+config.test.yaml
+.DS_Store
+.env
