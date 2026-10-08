@@ -1,0 +1,35 @@
+# Temario oficial AI-901 (Skills measured as of April 15, 2026)
+# Fuente: https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/ai-901
+code: AI-901
+name: "Microsoft Azure AI Fundamentals"
+passing_score: 700
+domains:
+  - id: conceptos
+    name: "Identificar conceptos y capacidades de IA"
+    weight: "40–45%"
+    skills:
+      - id: ia-responsable
+        name: "Principios de IA responsable"
+        details: "Equidad, confiabilidad y seguridad, privacidad y seguridad, inclusión, transparencia, responsabilidad"
+      - id: modelos
+        name: "Componentes y configuración de modelos de IA"
+        details: "Cómo funcionan los modelos generativos, elegir modelo según capacidades, opciones de despliegue y parámetros de configuración"
+      - id: cargas-trabajo
+        name: "Cargas de trabajo de IA"
+        details: "IA generativa y agéntica, análisis de texto (palabras clave, entidades, sentimiento, resumen), voz (reconocimiento y síntesis), visión e imagen generativa, extracción de información de texto/imágenes/audio/video"
+  - id: foundry
+    name: "Implementar soluciones de IA con Microsoft Foundry"
+    weight: "55–60%"
+    skills:
+      - id: genai-agentes
+        name: "Apps de IA generativa y agentes con Foundry"
+        details: "Prompts de sistema y usuario, desplegar e interactuar con un modelo en el portal de Foundry, cliente de chat con el SDK de Foundry, crear y probar un agente, cliente para un agente"
+      - id: texto-voz
+        name: "Soluciones de texto y voz con Foundry"
+        details: "App con análisis de texto, responder prompts hablados con un modelo multimodal, app con Azure Speech en Foundry Tools"
+      - id: vision
+        name: "Visión e imagen generativa con Foundry"
+        details: "Entrada visual en prompts con modelo multimodal, generar imágenes, app con capacidades de visión"
+      - id: extraccion
+        name: "Extracción de información con Foundry"
+        details: "Azure Content Understanding en Foundry Tools: documentos y formularios, imágenes, audio y video; app de extracción de información"
