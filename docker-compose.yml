@@ -1,0 +1,12 @@
+# Uso: docker compose run --rm study-agent <URL de Microsoft Learn> [opciones]
+services:
+  study-agent:
+    build: .
+    image: azure-study-agent
+    env_file: .env
+    volumes:
+      - "${VAULT_DIR:?Define VAULT_DIR en .env}:/vault"
+      - study-agent-cache:/app/.cache
+
+volumes:
+  study-agent-cache:
