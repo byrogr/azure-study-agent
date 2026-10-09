@@ -52,6 +52,8 @@ class LearnClient:
     def normalize(self, url: str) -> str:
         """Fuerza el idioma configurado y quita query/fragment."""
         p = urlparse(url if url.startswith("http") else BASE + url)
+        if p.netloc != "learn.microsoft.com":
+            raise ValueError(f"URL no reconocida como ruta, módulo o unidad de Learn: {url}")
         path = p.path
         if _LOCALE_RE.match(path):
             path = _LOCALE_RE.sub(f"/{self.locale}/", path, count=1)

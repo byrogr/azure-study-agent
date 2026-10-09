@@ -21,6 +21,24 @@ class LLMError(RuntimeError):
 
 
 _LIMIT_RE = re.compile(r"(?i)usage limit|limit reached|rate.?limit|quota|credit balance|overloaded")
+_AUTH_RE = re.compile(r"(?i)not logged in|/login|invalid api key|authentication|oauth token")
+AUTH_HINT = ("Claude Code no tiene sesión iniciada: ejecuta `claude` e inicia sesión con tu cuenta, "
+             "o en Docker define CLAUDE_CODE_OAUTH_TOKEN (generado con `claude setup-token`).")
+
+
+def _error(prefix: str, msg: str) -> LLMError:
+    if _AUTH_RE.search(msg):
+        return LLMError(f"{AUTH_HINT} ({msg})", retryable=False)
+    return LLMError(f"{prefix}: {msg}", retryable=not _LIMIT_RE.search(msg))
+
+
+def _result_text(stdout: str) -> str:
+    """Con --output-format json, el motivo del fallo viene en el campo `result`."""
+    try:
+        result = json.loads(stdout).get("result")
+        return str(result) if result else ""
+    except (ValueError, AttributeError):
+        return ""
 
 
 class ClaudeCLI:
@@ -69,16 +87,14 @@ class ClaudeCLI:
                 raise LLMError(f"`claude` superó el timeout de {self.timeout}s", retryable=False)
         self.calls += 1
         if proc.returncode != 0:
-            msg = (proc.stderr or proc.stdout).strip()[:800]
+            msg = (_result_text(proc.stdout) or proc.stderr or proc.stdout).strip()[:800]
             if schema and "json-schema" in msg:
                 self.use_json_schema = False  # versión antigua de Claude Code
                 return self._call(system, prompt, None)
-            raise LLMError(f"`claude` terminó con código {proc.returncode}: {msg}",
-                           retryable=not _LIMIT_RE.search(msg))
+            raise _error(f"`claude` terminó con código {proc.returncode}", msg)
         envelope = json.loads(proc.stdout)
         if envelope.get("is_error"):
-            msg = str(envelope.get("result"))[:800]
-            raise LLMError(f"Claude respondió con error: {msg}", retryable=not _LIMIT_RE.search(msg))
+            raise _error("Claude respondió con error", str(envelope.get("result"))[:800])
         self.cost_usd += float(envelope.get("total_cost_usd") or 0)
         structured = envelope.get("structured_output")
         if isinstance(structured, dict):

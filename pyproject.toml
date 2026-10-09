@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "azure-study-agent"
+description = "Convierte Microsoft Learn en notas de estudio para Obsidian usando Claude Code"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Roger Rojas" }]
+requires-python = ">=3.9"
+dynamic = ["version"]
+dependencies = [
+    "requests>=2.31",
+    "beautifulsoup4>=4.12",
+    "markdownify>=0.12",
+    "PyYAML>=6.0",
+]
+
+[project.urls]
+Repository = "https://github.com/byrogr/azure-study-agent"
+
+[project.scripts]
+study-agent = "study_agent.cli:main"
+
+[tool.setuptools]
+packages = ["study_agent"]
+
+[tool.setuptools.dynamic]
+version = { attr = "study_agent.__version__" }
+
+[tool.setuptools.package-data]
+study_agent = ["exams/*.yaml", "config.example.yaml"]

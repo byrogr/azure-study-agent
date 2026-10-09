@@ -1,4 +1,5 @@
-# Copia este archivo como config.yaml y ajusta las rutas.
+# Configuración de study-agent: `study-agent init` la copia a ~/.config/study-agent/config.yaml.
+# Solo hace falta dejar las claves que cambies; el resto toma estos valores por defecto.
 
 # Ruta absoluta a tu vault de Obsidian
 vault_path: "/Users/TU_USUARIO/Documents/ObsidianVault"
@@ -6,7 +7,7 @@ vault_path: "/Users/TU_USUARIO/Documents/ObsidianVault"
 # Carpeta dentro del vault donde se guardan las notas de la certificación
 base_folder: "Certificaciones/AI-901"
 
-# Examen activo (archivo en exams/<exam>.yaml)
+# Temario activo (ver `study-agent exams`)
 exam: "ai-901"
 
 # Idioma de Microsoft Learn (se reescribe en la URL: en-us -> es-es)
