@@ -84,7 +84,7 @@ def cmd_exams(args) -> int:
     for exam_id, exam in paths.list_exams().items():
         mark = "*" if exam_id == cfg.get("exam") else " "
         print(f"{mark} {exam_id:<12} {exam.get('code', '')} · {exam.get('name', '')}")
-    print(f"\nTemarios propios: {paths.config_dir() / 'exams'}/<id>.yaml")
+    print(f"\nTemarios propios: {paths.config_dir() / 'exams' / '<id>.yaml'}")
     return 0
 
 

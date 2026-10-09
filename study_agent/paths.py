@@ -97,5 +97,5 @@ def load_exam(exam_id: str) -> dict:
     f = _exam_files().get(exam_id)
     if f is None:
         raise ConfigError(f"No existe el temario `{exam_id}`. Disponibles: {', '.join(sorted(_exam_files()))}. "
-                          f"Puedes añadir el tuyo en {config_dir() / 'exams'}/<id>.yaml")
+                          f"Puedes añadir el tuyo en {config_dir() / 'exams' / '<id>.yaml'}")
     return yaml.safe_load(f.read_text(encoding="utf-8"))
