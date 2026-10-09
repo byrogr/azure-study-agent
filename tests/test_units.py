@@ -2,7 +2,9 @@
 
 Uso: python -m unittest discover tests
 """
+import io
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -15,9 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 FX = ROOT / "tests" / "fixtures"
 
-import yaml  # noqa: E402
-
-from study_agent import learn, llm, obsidian  # noqa: E402
+from study_agent import cli, learn, llm, obsidian, paths  # noqa: E402
 
 
 class LearnTests(unittest.TestCase):
@@ -81,7 +81,7 @@ class MermaidTests(unittest.TestCase):
 class VaultTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        exam = yaml.safe_load((ROOT / "exams" / "ai-901.yaml").read_text(encoding="utf-8"))
+        exam = paths.load_exam("ai-901")
         self.vault = obsidian.Vault(self.tmp.name, "Cert", exam)
         self.analysis = {"dominio_id": "conceptos", "habilidad_id": "modelos", "justificacion": "j",
                          "relevancia_examen": "alta", "conceptos": [
@@ -129,6 +129,15 @@ class LLMTests(unittest.TestCase):
                 cli.ask_json("s", "p")
         self.assertEqual(run.call_count, 1)
 
+    def test_not_logged_in_is_not_retried_and_explains(self):
+        out = json.dumps({"is_error": True, "result": "Not logged in · Please run /login"})
+        cli_ = llm.ClaudeCLI(use_json_schema=False)
+        with mock.patch("subprocess.run", return_value=self.proc(1, stdout=out)) as run:
+            with self.assertRaises(llm.LLMError) as ctx:
+                cli_.ask_json("s", "p")
+        self.assertEqual(run.call_count, 1)
+        self.assertIn("CLAUDE_CODE_OAUTH_TOKEN", str(ctx.exception))
+
     def test_invalid_json_is_retried_with_nudge(self):
         bad = self.proc(stdout=json.dumps({"result": "no json"}))
         good = self.proc(stdout=json.dumps({"result": '{"ok": true}'}))
@@ -136,6 +145,91 @@ class LLMTests(unittest.TestCase):
         with mock.patch("subprocess.run", side_effect=[bad, good]) as run:
             self.assertEqual(cli.ask_json("s", "p"), {"ok": True})
         self.assertIn("IMPORTANTE", run.call_args_list[1].kwargs["input"])
+
+
+class PathsTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        env = {"STUDY_AGENT_CONFIG_DIR": str(self.dir / "cfg"), "XDG_CACHE_HOME": str(self.dir / "cache")}
+        self.env = mock.patch.dict(os.environ, env)
+        self.env.start()
+        for k in ("STUDY_AGENT_CONFIG", "STUDY_AGENT_VAULT"):
+            os.environ.pop(k, None)
+
+    def tearDown(self):
+        self.env.stop()
+        self.tmp.cleanup()
+
+    def test_defaults_without_user_config(self):
+        cfg = paths.load_config()
+        self.assertEqual(cfg["exam"], "ai-901")
+        self.assertEqual(paths.cache_dir(), self.dir / "cache" / "study-agent")
+        with self.assertRaises(paths.ConfigError):  # placeholder TU_USUARIO
+            paths.require_vault(cfg)
+
+    def test_user_config_merges_and_env_vault_wins(self):
+        (self.dir / "cfg").mkdir()
+        (self.dir / "cfg" / "config.yaml").write_text("vault_path: /a\nclaude: {model: opus}\n")
+        cfg = paths.load_config()
+        self.assertEqual(cfg["claude"]["model"], "opus")
+        self.assertEqual(cfg["claude"]["bin"], "claude")  # default conservado
+        self.assertEqual(paths.require_vault(cfg), "/a")
+        with mock.patch.dict(os.environ, {"STUDY_AGENT_VAULT": "/b"}):
+            self.assertEqual(paths.load_config()["vault_path"], "/b")
+        with self.assertRaises(paths.ConfigError):
+            paths.load_config(str(self.dir / "no-existe.yaml"))
+
+    def test_user_exam_overrides_packaged(self):
+        (self.dir / "cfg" / "exams").mkdir(parents=True)
+        (self.dir / "cfg" / "exams" / "ai-901.yaml").write_text("code: MINE\nname: x\ndomains: []\n")
+        (self.dir / "cfg" / "exams" / "cka.yaml").write_text("code: CKA\nname: k\ndomains: []\n")
+        self.assertEqual(paths.load_exam("ai-901")["code"], "MINE")
+        self.assertIn("cka", paths.list_exams())
+        with self.assertRaises(paths.ConfigError):
+            paths.load_exam("nope")
+
+    def run_cli(self, *argv):
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch("sys.stdout", out), mock.patch("sys.stderr", err):
+            code = cli.main(list(argv))
+        return code, out.getvalue(), err.getvalue()
+
+    def test_init_then_generate_requires_no_flags(self):
+        vault = self.dir / "vault"
+        vault.mkdir()
+        with mock.patch.object(llm.ClaudeCLI, "check"):
+            code, out, _ = self.run_cli("init", "--vault", str(vault))
+        self.assertEqual(code, 0)
+        self.assertEqual(paths.require_vault(paths.load_config()), str(vault.resolve()))
+        code, _, err = self.run_cli("init", "--vault", str(vault))
+        self.assertEqual(code, 2)
+        self.assertIn("--force", err)
+
+    def test_init_escapes_windows_paths(self):
+        vault = self.dir / "vault"
+        vault.mkdir()
+        fake = Path("C:\\Users\\ana\\Obsidian")
+        with mock.patch.object(llm.ClaudeCLI, "check"), \
+                mock.patch.object(cli.Path, "resolve", return_value=fake), \
+                mock.patch.object(cli.Path, "is_dir", return_value=True):
+            self.assertEqual(self.run_cli("init", "--vault", str(vault))[0], 0)
+        self.assertEqual(paths.load_config()["vault_path"], str(fake))
+
+    def test_list_subcommand_and_global_config_flag(self):
+        cfg = self.dir / "c.yaml"
+        cfg.write_text("learn_locale: es-es\n")
+        fake = lambda s, u, markdown=False: (FX / ("path.html" if "/paths/" in u else "module.html")).read_text(encoding="utf-8")
+        with mock.patch.object(learn.LearnClient, "_get", fake):
+            code, out, _ = self.run_cli("-c", str(cfg), "list",
+                                        "https://learn.microsoft.com/en-us/training/paths/ai-concepts/", "--only", "1")
+        self.assertEqual(code, 0)
+        self.assertIn("1-introduction", out)
+        self.assertNotIn("7b-exercise", out)
+        code, _, err = self.run_cli("list", "https://example.com/x")
+        self.assertEqual(code, 1)
+        self.assertIn("URL no reconocida", err)
+        self.assertIn("https://example.com/x", err)
 
 
 if __name__ == "__main__":
