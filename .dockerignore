@@ -7,3 +7,7 @@ config.test.yaml
 .git/
 .DS_Store
 *.pyc
+*.egg-info/
+build/
+dist/
+tests/

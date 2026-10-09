@@ -5,3 +5,7 @@ config.yaml
 config.test.yaml
 .DS_Store
 .env
+*.egg-info/
+build/
+dist/
+*.spec

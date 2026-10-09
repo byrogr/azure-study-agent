@@ -8,21 +8,16 @@ RUN apt-get update \
     && npm cache clean --force
 
 WORKDIR /app
-COPY requirements.txt .
-RUN python3 -m venv /opt/venv && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml README.md LICENSE ./
+COPY study_agent ./study_agent
+RUN python3 -m venv /opt/venv && /opt/venv/bin/pip install --no-cache-dir . \
+    && mkdir -p /vault /home/node/.cache/study-agent /home/node/.config/study-agent \
+    && chown -R node:node /vault /home/node/.cache /home/node/.config
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     STUDY_AGENT_VAULT=/vault
 
-COPY study_agent ./study_agent
-COPY exams ./exams
-COPY tests ./tests
-COPY config.example.yaml ./
-# Config por defecto; monta tu propio config.yaml en /app/config.yaml para cambiarla
-RUN cp config.example.yaml config.yaml \
-    && mkdir -p .cache /vault && chown -R node:node /app /vault
-
 # Claude Code no debe correr como root
 USER node
-ENTRYPOINT ["python", "-m", "study_agent"]
+ENTRYPOINT ["study-agent"]
 CMD ["--help"]
