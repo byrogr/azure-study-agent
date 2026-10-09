@@ -1,0 +1,83 @@
+# Publica una release al subir un tag vX.Y.Z:
+#   git tag v0.2.0 && git push origin v0.2.0
+# Compila un binario autocontenido por plataforma (no requiere Python) y lo adjunta
+# a la release junto con su .sha256, el wheel y el sdist.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Binario ${{ matrix.asset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04,     asset: study-agent-linux-x64 }
+          - { os: ubuntu-22.04-arm, asset: study-agent-linux-arm64 }
+          - { os: macos-15-intel,   asset: study-agent-macos-x64 }
+          - { os: macos-14,         asset: study-agent-macos-arm64 }
+          - { os: windows-latest,   asset: study-agent-windows-x64.exe }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Comprobar que el tag coincide con la versión del paquete
+        shell: bash
+        run: |
+          version=$(python -c "import re;print(re.search(r'__version__ = \"(.+)\"', open('study_agent/__init__.py').read())[1])")
+          [ "v$version" = "$GITHUB_REF_NAME" ] || { echo "Tag $GITHUB_REF_NAME != __version__ $version"; exit 1; }
+
+      - run: pip install . pyinstaller
+
+      - name: Compilar
+        shell: bash
+        run: |
+          pyinstaller --onefile --name study-agent --collect-data study_agent packaging/entry.py
+          mkdir -p out
+          src=dist/study-agent; [ -f dist/study-agent.exe ] && src=dist/study-agent.exe
+          mv "$src" "out/${{ matrix.asset }}"
+
+      - name: Probar el binario
+        shell: bash
+        run: |
+          ./out/${{ matrix.asset }} --version
+          ./out/${{ matrix.asset }} exams
+
+      - name: Checksum
+        shell: bash
+        working-directory: out
+        run: python -c "import hashlib,sys;f=sys.argv[1];print(hashlib.sha256(open(f,'rb').read()).hexdigest()+'  '+f)" ${{ matrix.asset }} > ${{ matrix.asset }}.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: out/*
+
+  release:
+    name: Publicar release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Wheel y sdist
+        run: pip install build && python -m build --outdir out
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Crear la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" out/* --title "$GITHUB_REF_NAME" --generate-notes
