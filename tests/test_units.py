@@ -164,6 +164,7 @@ class PathsTests(unittest.TestCase):
     def test_defaults_without_user_config(self):
         cfg = paths.load_config()
         self.assertEqual(cfg["exam"], "ai-901")
+        self.assertNotIn("base_folder", cfg)  # se deriva del temario: no fijarlo a AI-901
         self.assertEqual(paths.cache_dir(), self.dir / "cache" / "study-agent")
         with self.assertRaises(paths.ConfigError):  # placeholder TU_USUARIO
             paths.require_vault(cfg)

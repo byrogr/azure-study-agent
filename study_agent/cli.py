@@ -114,7 +114,7 @@ def cmd_generate(args) -> int:
     llm = ClaudeCLI(c.get("bin", "claude"), args.model or c.get("model", "sonnet"),
                     int(c.get("timeout_seconds", 900)), bool(c.get("use_json_schema", True)))
     llm.check()
-    vault = Vault(vault_path, cfg.get("base_folder", f"Certificaciones/{exam['code']}"), exam)
+    vault = Vault(vault_path, cfg.get("base_folder") or f"Certificaciones/{exam['code']}", exam)
     pipe = Pipeline(llm, exam, paths.cache_dir(), cfg.get("generation", {}))
 
     failures = 0

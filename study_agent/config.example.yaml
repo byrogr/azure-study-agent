@@ -4,8 +4,9 @@
 # Ruta absoluta a tu vault de Obsidian
 vault_path: "/Users/TU_USUARIO/Documents/ObsidianVault"
 
-# Carpeta dentro del vault donde se guardan las notas de la certificación
-base_folder: "Certificaciones/AI-901"
+# Carpeta dentro del vault donde se guardan las notas.
+# Por defecto "Certificaciones/<CÓDIGO DEL TEMARIO>", p. ej. Certificaciones/AI-901.
+# base_folder: "Certificaciones/AI-901"
 
 # Temario activo (ver `study-agent exams`)
 exam: "ai-901"
