@@ -3,6 +3,9 @@
 Convierte rutas, módulos o unidades de **Microsoft Learn** en notas de estudio para **Obsidian**,
 usando **Claude Code con tu suscripción de Claude** (sin API key).
 
+📖 **[Manual de uso completo](docs/MANUAL.md)**: instalación, comandos, cómo estudiar con las notas,
+configuración, temarios propios y solución de problemas.
+
 ```
 URL de Learn → leer contenido → clasificar tema (temario oficial) → extraer conceptos
             → resumen → preguntas tipo examen → flashcards → mapa conceptual → Obsidian
